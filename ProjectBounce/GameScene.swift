@@ -12,11 +12,22 @@ class GameScene: SKScene {
     
     var entities = [GKEntity]()
     var graphs = [String : GKGraph]()
+    var xpos = 0
+    var ypos = 0
     
     private var lastUpdateTime : TimeInterval = 0
     private var label : SKLabelNode?
     private var spinnyNode : SKShapeNode?
     private var ball: SKShapeNode?
+    
+    override func didMove(to view: SKView) {
+            super.didMove(to: view) // Call the super class's implementation
+            
+            // Setup for double tap gesture recognizer
+            let doubleTapRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap))
+            doubleTapRecognizer.numberOfTapsRequired = 2
+            view.addGestureRecognizer(doubleTapRecognizer)
+        }
     
     override func sceneDidLoad() {
 
@@ -62,7 +73,7 @@ class GameScene: SKScene {
         }
             
         // Adjust boundary to be slightly further away from the edge
-        let insetRect = frame.insetBy(dx: 10.0, dy: 10.0)
+        let insetRect = frame.insetBy(dx: 25.0, dy: 5.0)
         
         self.physicsBody = SKPhysicsBody(edgeLoopFrom: insetRect)
             
@@ -71,11 +82,22 @@ class GameScene: SKScene {
         
     }
     
+    @objc func handleDoubleTap() {
+        // Action to perform on double tap
+        guard let ball = self.ball, let ballPhysicsBody = ball.physicsBody else { return }
+        if ball.physicsBody?.affectedByGravity == false {
+            ball.physicsBody?.affectedByGravity = true
+        } else {
+            ball.physicsBody?.affectedByGravity = false
+        }
+        
+    }
     
     func touchDown(atPoint pos: CGPoint) {
         // Ensure the ball exists and has a physics body to apply force to
         guard let ball = self.ball, let ballPhysicsBody = ball.physicsBody else { return }
-        
+        xpos = Int(pos.x)
+        ypos = Int(pos.y)
         // Calculate the distance between the touch point and the ball's position
         let distance = sqrt(pow(ball.position.x - pos.x, 2) + pow(ball.position.y - pos.y, 2))
         
@@ -85,33 +107,35 @@ class GameScene: SKScene {
         // Check if the distance is within the threshold
         if distance <= threshold {
             // Apply force to the ball
-            ballPhysicsBody.applyForce(CGVector(dx: ball.path.dx * 10, dy: 100))
+            ballPhysicsBody.velocity = CGVector(dx:0, dy:0)
         }
     }
 
     
     func touchMoved(toPoint pos : CGPoint) {
-        guard let ball = self.ball, let ballPhysicsBody = ball.physicsBody else { return }
-        
-        // Calculate the distance between the touch point and the ball's position
-        let distance = sqrt(pow(ball.position.x - pos.x, 2) + pow(ball.position.y - pos.y, 2))
-        
-        // Define a threshold for how close the touch must be to the ball to apply force
-        let threshold: CGFloat = 50.0
-        
-        // Check if the distance is within the threshold
-        if distance <= threshold {
-            // Apply force to the ball
-            ballPhysicsBody.applyForce(CGVector(dx: 100, dy: 100))
-        }
+//        guard let ball = self.ball, let ballPhysicsBody = ball.physicsBody else { return }
+//        
+//        // Calculate the distance between the touch point and the ball's position
+//        let distance = sqrt(pow(ball.position.x - pos.x, 2) + pow(ball.position.y - pos.y, 2))
+//        
+//        // Define a threshold for how close the touch must be to the ball to apply force
+//        let threshold: CGFloat = 50.0
+//        
+//        // Check if the distance is within the threshold
+//        if distance <= threshold {
+//            // Apply force to the ball
+//            ballPhysicsBody.applyForce(CGVector(dx: ball.position.x, dy: ball.position.y))
+//        }
     }
     
     func touchUp(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.red
-            self.addChild(n)
-        }
+        guard let ball = self.ball, let ballPhysicsBody = ball.physicsBody else { return }
+        let dx = CGFloat(xpos) - pos.x
+        let dy = CGFloat(ypos) - pos.y
+
+        // Apply a scaled down force to make it more manageable
+        let forceScale: CGFloat = 10
+        ballPhysicsBody.applyForce(CGVector(dx: dx * forceScale, dy: dy * forceScale))
     }
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -152,5 +176,6 @@ class GameScene: SKScene {
         }
         
         self.lastUpdateTime = currentTime
+    
     }
 }
