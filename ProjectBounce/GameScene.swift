@@ -7,6 +7,7 @@
 
 import SpriteKit
 import GameplayKit
+import CoreMotion
 
 class GameScene: SKScene {
     
@@ -19,6 +20,7 @@ class GameScene: SKScene {
     private var label : SKLabelNode?
     private var spinnyNode : SKShapeNode?
     private var ball: SKShapeNode?
+    let motionManager = CMMotionManager()
     
     override func didMove(to view: SKView) {
             super.didMove(to: view) // Call the super class's implementation
@@ -27,6 +29,17 @@ class GameScene: SKScene {
             let doubleTapRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap))
             doubleTapRecognizer.numberOfTapsRequired = 2
             view.addGestureRecognizer(doubleTapRecognizer)
+        
+        if motionManager.isAccelerometerAvailable {
+            motionManager.accelerometerUpdateInterval = 0.2
+            motionManager.startAccelerometerUpdates(to: .main) { [weak self] (data, error) in
+                guard let self = self, let accelerometerData = data else { return }
+                
+                // Adjust gravity to always point downwards
+                let gravity: CGVector = CGVector(dx: accelerometerData.acceleration.x * 9.8, dy: accelerometerData.acceleration.y * 9.8)
+                self.physicsWorld.gravity = gravity
+            }
+        }
         }
     
     override func sceneDidLoad() {
@@ -54,26 +67,27 @@ class GameScene: SKScene {
         }
         
         // My code below
-        self.backgroundColor = .red;
+        self.backgroundColor = .white;
         
         ball = SKShapeNode(circleOfRadius: 30);
-        ball?.fillColor = .white;
+        ball?.fillColor = .black;
         ball?.position = CGPoint(x: frame.midX, y: frame.midY)
         
         ball?.physicsBody = SKPhysicsBody(circleOfRadius: 30)
         ball?.physicsBody?.isDynamic = true
-        ball?.physicsBody?.restitution = 1.0 // Bounciness factor
-        ball?.physicsBody?.friction = 0.0
+        ball?.physicsBody?.restitution = 0.99 // Bounciness factor
+        ball?.physicsBody?.friction = 0.2
         ball?.physicsBody?.linearDamping = 0.0
         ball?.physicsBody?.allowsRotation = true
         ball?.physicsBody?.affectedByGravity = false
+        self.physicsWorld.gravity = CGVector(dx: 9.8, dy: 0)
         
         if let ball = ball {
             addChild(ball)
         }
             
         // Adjust boundary to be slightly further away from the edge
-        let insetRect = frame.insetBy(dx: 25.0, dy: 5.0)
+        let insetRect = frame.insetBy(dx: 60.0, dy: 3.0)
         
         self.physicsBody = SKPhysicsBody(edgeLoopFrom: insetRect)
             
@@ -87,8 +101,16 @@ class GameScene: SKScene {
         guard let ball = self.ball, let ballPhysicsBody = ball.physicsBody else { return }
         if ball.physicsBody?.affectedByGravity == false {
             ball.physicsBody?.affectedByGravity = true
+            ball.physicsBody?.friction = 0.2
+            ball.physicsBody?.restitution = 0.99
+            self.backgroundColor = .black
+            ball.fillColor = .white
         } else {
             ball.physicsBody?.affectedByGravity = false
+            ball.physicsBody?.friction = 0.0
+            ball.physicsBody?.restitution = 1.0
+            self.backgroundColor = .white
+            ball.fillColor = .black
         }
         
     }
