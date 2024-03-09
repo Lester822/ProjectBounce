@@ -16,6 +16,7 @@ class GameScene: SKScene {
     private var lastUpdateTime : TimeInterval = 0
     private var label : SKLabelNode?
     private var spinnyNode : SKShapeNode?
+    private var ball: SKShapeNode?
     
     override func sceneDidLoad() {
 
@@ -40,22 +41,68 @@ class GameScene: SKScene {
                                               SKAction.fadeOut(withDuration: 0.5),
                                               SKAction.removeFromParent()]))
         }
+        
+        // My code below
+        self.backgroundColor = .red;
+        
+        ball = SKShapeNode(circleOfRadius: 30);
+        ball?.fillColor = .white;
+        ball?.position = CGPoint(x: frame.midX, y: frame.midY)
+        
+        ball?.physicsBody = SKPhysicsBody(circleOfRadius: 30)
+        ball?.physicsBody?.isDynamic = true
+        ball?.physicsBody?.restitution = 1.0 // Bounciness factor
+        ball?.physicsBody?.friction = 0.0
+        ball?.physicsBody?.linearDamping = 0.0
+        ball?.physicsBody?.allowsRotation = true
+        ball?.physicsBody?.affectedByGravity = false
+        
+        if let ball = ball {
+            addChild(ball)
+        }
+            
+        // Adjust boundary to be slightly further away from the edge
+        let insetRect = frame.insetBy(dx: 10.0, dy: 10.0)
+        
+        self.physicsBody = SKPhysicsBody(edgeLoopFrom: insetRect)
+            
+        // Give the ball an initial push
+        ball?.physicsBody?.applyImpulse(CGVector(dx: 20, dy: -20))
+        
     }
     
     
-    func touchDown(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.green
-            self.addChild(n)
+    func touchDown(atPoint pos: CGPoint) {
+        // Ensure the ball exists and has a physics body to apply force to
+        guard let ball = self.ball, let ballPhysicsBody = ball.physicsBody else { return }
+        
+        // Calculate the distance between the touch point and the ball's position
+        let distance = sqrt(pow(ball.position.x - pos.x, 2) + pow(ball.position.y - pos.y, 2))
+        
+        // Define a threshold for how close the touch must be to the ball to apply force
+        let threshold: CGFloat = 50.0
+        
+        // Check if the distance is within the threshold
+        if distance <= threshold {
+            // Apply force to the ball
+            ballPhysicsBody.applyForce(CGVector(dx: ball.path.dx * 10, dy: 100))
         }
     }
+
     
     func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            self.addChild(n)
+        guard let ball = self.ball, let ballPhysicsBody = ball.physicsBody else { return }
+        
+        // Calculate the distance between the touch point and the ball's position
+        let distance = sqrt(pow(ball.position.x - pos.x, 2) + pow(ball.position.y - pos.y, 2))
+        
+        // Define a threshold for how close the touch must be to the ball to apply force
+        let threshold: CGFloat = 50.0
+        
+        // Check if the distance is within the threshold
+        if distance <= threshold {
+            // Apply force to the ball
+            ballPhysicsBody.applyForce(CGVector(dx: 100, dy: 100))
         }
     }
     
